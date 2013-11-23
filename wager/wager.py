@@ -19,6 +19,16 @@ def SendSMS(data):
 	for email_address in recipients:
 		server.sendmail( config.gmail_user, email_address, data )
 
+def CheckValue(wager, threshold=150):
+	regex = re.compile("\d+")
+	matches = regex.findall(wager)
+	if len(matches) == 2:
+		if (int(matches[0]) > threshold or int(matches[1]) > threshold):
+			return True
+	
+	return False
+
+
 customerID = config.customerID
 password = config.password
 row_tracker = ''
@@ -31,10 +41,13 @@ logging.basicConfig(format='%(asctime)s | %(levelname)s | %(filename)s | %(messa
 params = { 'customerID' : customerID, 'password' : password}
 
 logging.info("Reading list...")
-with open(path+'/list.txt') as f:
-	id_list = f.readlines()
-f.close()
-id_list = ["".join(x.split()) for x in id_list]
+if os.path.isfile(path+'/list.txt'):
+	with open(path+'/list.txt') as f:
+		id_list = f.readlines()
+	f.close()
+	id_list = ["".join(x.split()) for x in id_list]
+else:
+	id_list = []
 
 logging.debug("List contents: {0}".format(id_list))
 
@@ -130,14 +143,22 @@ if len(bets_dict):
 			data += bet['sport_name']+'\n'
 			data += bet['bet_size']
 			try:
-				logging.info("Sending data: {0}".format(data))
-				# Send SMS
-				SendSMS(data)
-				print data
-				logging.info("Updating list...")
-				with open(path+'/list.txt', 'a') as f:
-					f.write(bet['ticket_id']+'\n')
-				f.close()
+				if CheckValue(bet['bet_size']):
+					logging.info("Sending data: {0}".format(data))
+					# Send SMS
+					SendSMS(data)
+					print data
+					logging.info("Updating list...")
+					with open(path+'/list.txt', 'a') as f:
+						f.write(bet['ticket_id']+'\n')
+					f.close()
+				else:
+					print "Bets not large enough"
+					logging.info("Bet not large enough: {0}".format(data))
+					logging.info("Updating list...")
+					with open(path+'/list.txt', 'a') as f:
+						f.write(bet['ticket_id']+'\n')
+					f.close()
 			except Exception, err:
 				traceback.print_exc(file=sys.stdout)
 				logging.exception(err)
