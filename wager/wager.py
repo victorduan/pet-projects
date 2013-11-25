@@ -20,9 +20,11 @@ def SendSMS(data):
 		server.sendmail( config.gmail_user, email_address, data )
 
 def CheckValue(wager, threshold=150):
-	regex = re.compile("\d+")
+	regex = re.compile("[\d,]+")
 	matches = regex.findall(wager)
 	if len(matches) == 2:
+		matches[0] = matches[0].replace(",", "")
+		matches[1] = matches[1].replace(",", "")
 		if (int(matches[0]) > threshold or int(matches[1]) > threshold):
 			return True
 	
@@ -118,7 +120,7 @@ for bet in bets:
 				bets_dict[index]['bet_size'] = bet_size
 
 				temp = bet.find_all('th')[1]
-				regex = re.compile("[0-9aA-zZ\s]+<br>")
+				regex = re.compile("[0-9aA-zZ\s\(\)-]+<br>")
 				wager_type = regex.findall(str(temp))[0]
 				# Add wager type: Spread, Parlay, etc
 				bets_dict[index]['wager_type'] = wager_type.strip().replace("<br>","") 
