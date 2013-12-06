@@ -1,0 +1,21 @@
+version: 1
+
+formatters:
+    simpleFormater:
+        format: '%(asctime)s | %(levelname)s | %(filename)s | %(message)s'
+
+handlers:
+    console:
+        class: logging.StreamHandler
+        formatter: simpleFormater
+        level: DEBUG
+        stream: ext://sys.stdout
+    file:
+        class : logging.FileHandler
+        formatter: simpleFormater
+        level: DEBUG
+        filename: "logs/log.log"
+
+root:
+    level: INFO
+    handlers: [console, file]
