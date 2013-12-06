@@ -42,6 +42,7 @@ def SendSMS(data):
 	server.starttls()
 	server.login( config.gmail_user, config.gmail_pass )
 	for email_address in recipients:
+		logging.debug("Sending: {0} to {1}".format(data, email_address))
 		server.sendmail( config.gmail_user, email_address, data.encode('utf-8') )
 
 def ProcessThread(url, follow_user):
@@ -113,7 +114,7 @@ def ProcessThread(url, follow_user):
 							data += post_time + "\n"
 							data += re.sub(r'[\xa0]'," ",post_text)
 							logging.info("Data matched and ready to send: {0}".format(data))
-							#SendSMS(data)
+							SendSMS(data)
 
 							# Notify and log
 							with open(path+'/forum.txt', 'a') as f:
