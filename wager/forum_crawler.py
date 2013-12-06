@@ -8,6 +8,7 @@ import sys
 import logging
 import yaml
 import re
+import requests
 from datetime import date
 today = date.today().strftime("%m/%d/%y")
 
@@ -44,6 +45,21 @@ def SendSMS(data):
 	for email_address in recipients:
 		logging.debug("Sending: {0} to {1}".format(data, email_address))
 		server.sendmail( config.gmail_user, email_address, data.encode('utf-8') )
+
+def GetBitlyLink(url):
+	token = config_dict["bitly"]["token"]
+	endpoint = config_dict["bitly"]["endpoint"]
+	params = {
+		'access_token' 	: token,
+		'longUrl'		: url
+	}
+	r = requests.get(endpoint, params=params)
+	if r.status_code == 200:
+		logging.debug(r.content)
+		return json.loads(r.content)['data']['hash']
+	else:
+		logging.error(r.content)
+		return ""
 
 def ProcessThread(url, follow_user):
 	page = 1 # Assume every thread has 1 page
@@ -109,7 +125,10 @@ def ProcessThread(url, follow_user):
 						# Check to see if the post has been collected already
 						post_checker = str(username) + '|' + str(next_url) + '|' + str(post_number)
 						if post_checker not in id_list:
+							# Shorten the URL
+							bitly_hash = GetBitlyLink(next_url)
 							data  = follow_user + "\n"
+							data += "bit.ly/"+bitly_hash+"\n"
 							data += post_header + " | " + post_number + "\n"
 							data += post_time + "\n"
 							data += re.sub(r'[\xa0]'," ",post_text)
