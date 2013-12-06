@@ -3,11 +3,11 @@
 
 import os
 import json
-import traceback
 import smtplib
 import sys
+import logging
+import yaml
 import re
-import config
 from datetime import date
 today = date.today().strftime("%m/%d/%y")
 
@@ -16,6 +16,15 @@ from bs4 import BeautifulSoup
 
 path = os.path.dirname(os.path.realpath(__file__))
 
+# Logging file details
+from logging import config
+with open('logging.yml') as f:
+	D = yaml.load(f)
+logging.config.dictConfig(D)
+
+# Import config after logging config
+import config
+
 def LoadConfig():
 	if os.path.isfile(path+'/forum_config.json'):
 		with open(path+'/forum_config.json') as json_file:
@@ -23,12 +32,12 @@ def LoadConfig():
 		json_file.close()
 		return json_dict
 	else:
-		print "No config file found. Exiting."
+		logging.error("No config file found. Exiting.")
 		sys.exit()
 
   
 def SendSMS(data):
-	recipients = config.recipients
+	recipients = config_dict['recipients']
 	server = smtplib.SMTP( "smtp.gmail.com", 587 )
 	server.starttls()
 	server.login( config.gmail_user, config.gmail_pass )
@@ -38,7 +47,7 @@ def SendSMS(data):
 def ProcessThread(url, follow_user):
 	page = 1 # Assume every thread has 1 page
 	max_page = 0
-	next_url = url + '&page=' + str(page)
+	runLoop = True
 
 	# List format should be:
 	# User|URL|Post#
@@ -51,68 +60,72 @@ def ProcessThread(url, follow_user):
 		id_list = []  
 
 	br = mechanize.Browser()
-	br.open(next_url)
-	html = br.response().get_data()
 
-	soup = BeautifulSoup(html)
+	while runLoop:
+		next_url = url + '&page=' + str(page)
+		logging.info("Opening: %s" % next_url)
+		br.open(next_url)
+		html = br.response().get_data()
 
-	main_table = soup.find_all('table', attrs={"class": "forum"})[0]
-	# Find pages
-	nav_table = soup.find_all('table', attrs={"class": "threadnav-row"})[1]
-	try:
-		page_counter = nav_table.tr.find_all('td')[1].strong.contents[0]
-		print page_counter
-		regex = re.compile("\d$")
-		max_page = int(regex.findall(str(page_counter))[0])
-	except AttributeError:
-		max_page = 1
-		print "Only one page present"
+		soup = BeautifulSoup(html)
 
-	table_rows = main_table.find_all('tr')
-	post_header = main_table.find_all('td', attrs={'class': 'forumhead'})[1].contents[0]
-
-	print post_header
-
-	for i in range(len(table_rows)):
-		css_soup = BeautifulSoup(str(table_rows[i]))
+		main_table = soup.find_all('table', attrs={"class": "forum"})[0]
+		# Find pages
+		nav_table = soup.find_all('table', attrs={"class": "threadnav-row"})[1]
 		try:
-			node_attrs = css_soup.tr['class']
-			if str(node_attrs[0]) == 'sp-info':
-				links = table_rows[i].find_all('a')
-				username = links[0].contents[0]
-				if username.upper() == follow_user:
+			page_counter = nav_table.tr.find_all('td')[1].strong.contents[0]
+			regex = re.compile("\d$")
+			max_page = int(regex.findall(str(page_counter))[0])
+			page += 1
+			if page > max_page:
+				runLoop = False
+		except AttributeError:
+			# Stop the loop
+			runLoop = False
 
-					post_content = table_rows[i+1].find_all('td', attrs={"class": "forumpost-post"})[0]
+		table_rows = main_table.find_all('tr')
+		post_header = main_table.find_all('td', attrs={'class': 'forumhead'})[1].contents[0]
 
-					post_number = post_content.div.div.strong.contents[0]
-					post_content.find_all('div', attrs={"class": "right"})[0].decompose()
+		for i in range(len(table_rows)):
+			css_soup = BeautifulSoup(str(table_rows[i]))
+			try:
+				node_attrs = css_soup.tr['class']
+				if str(node_attrs[0]) == 'sp-info':
+					links = table_rows[i].find_all('a')
+					username = links[0].contents[0]
+					if username.upper() == follow_user:
 
-					post_time = post_content.find_all('div', attrs={"class": "posted"})[0].contents[0]
-					post_content.find_all('div', attrs={"class": "posted"})[0].decompose()
+						post_content = table_rows[i+1].find_all('td', attrs={"class": "forumpost-post"})[0]
 
-					post_text = ' '.join(post_content.findAll(text=True))
+						post_number = post_content.div.div.strong.contents[0]
+						post_content.find_all('div', attrs={"class": "right"})[0].decompose()
 
-					# Check to see if the post has been collected already
-					post_checker = str(username) + '|' + str(next_url) + '|' + str(post_number)
-					if post_checker not in id_list:
-						data  = follow_user + "\n"
-						data += post_header + " | " + post_number + "\n"
-						data += post_time + "\n"
-						data += re.sub(r'[\xa0]'," ",post_text)
-						print data
-						SendSMS(data)
+						post_time = post_content.find_all('div', attrs={"class": "posted"})[0].contents[0]
+						post_content.find_all('div', attrs={"class": "posted"})[0].decompose()
 
-						# Notify and log
-						with open(path+'/forum.txt', 'a') as f:
-							f.write(post_checker+'\n')
-						f.close()
+						post_text = ' '.join(post_content.findAll(text=True))
+
+						# Check to see if the post has been collected already
+						post_checker = str(username) + '|' + str(next_url) + '|' + str(post_number)
+						if post_checker not in id_list:
+							data  = follow_user + "\n"
+							data += post_header + " | " + post_number + "\n"
+							data += post_time + "\n"
+							data += re.sub(r'[\xa0]'," ",post_text)
+							logging.info("Data matched and ready to send: {0}".format(data))
+							#SendSMS(data)
+
+							# Notify and log
+							with open(path+'/forum.txt', 'a') as f:
+								f.write(post_checker+'\n')
+							f.close()
 
 
-		except KeyError:
-			print "Class not found. Skipping."
+			except KeyError:
+				print "Class not found. Skipping."
 
 
-def FindRecentPosts(user, url):
+def FindRecentPosts(follow_user, url):
 	# Read a JSON file to determine what threads to process
 	# Don't want to reprocess a thread with no new posts
 	if os.path.isfile(path+'/recent_posts.json'):
@@ -172,14 +185,13 @@ def FindRecentPosts(user, url):
 				json_dict[data['link']] = {'user' : data['user'], 'post_count' : data['post_count']}
 				posts_list.append(data)
 			else:
-				print "Nothing new posted in existing threads"
-
-	print posts_list
+				logging.info("No new post in thread: %s since last check" % url)
 
 	with open(path+'/recent_posts.json', 'w') as f:
 		f.write(json.dumps(json_dict))
 	f.close()
 
+	logging.debug("List of posts: {0}".format(posts_list))
 	return posts_list
 
 if __name__ == "__main__":
@@ -187,15 +199,15 @@ if __name__ == "__main__":
 	base_url = config_dict['base_url']
 
 	for user in config_dict['users']:
-		print "Checking user: %s" % user
+		logging.info("Checking user: %s" % user)
 		follow_user = user.upper()
 		url = base_url + follow_user
+		logging.info("User URL: %s" % url)
 		posts = []
 		posts = FindRecentPosts(follow_user, url)
 
-		print posts
-
 		for post in posts:
+			logging.info("Checking thread: %s" % post['link'])
 			ProcessThread(post['link'], follow_user)
 
 	
