@@ -19,7 +19,7 @@ path = os.path.dirname(os.path.realpath(__file__))
 
 # Logging file details
 from logging import config
-with open('logging.yml') as f:
+with open(path+'/logging.yml') as f:
 	D = yaml.load(f)
 logging.config.dictConfig(D)
 
