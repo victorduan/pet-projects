@@ -9,8 +9,9 @@ import logging
 import yaml
 import re
 import requests
-from datetime import date
+from datetime import date, timedelta
 today = date.today().strftime("%m/%d/%y")
+yesterday = (date.today()-timedelta(1)).strftime("%m/%d/%y")
 
 import mechanize
 from bs4 import BeautifulSoup
@@ -163,7 +164,7 @@ def FindRecentPosts(follow_user, url):
 	soup = BeautifulSoup(html)
 
 	recent_posts = soup.find_all(id='tblRecentPosts')[0].find_all('tr')
-
+	logging.debug(recent_posts)
 	# List of posts that should be processed
 	posts_list = []
 
@@ -197,7 +198,7 @@ def FindRecentPosts(follow_user, url):
 			'post_count' : post_count
 		}
 
-		if data['user'].upper() == follow_user and data['date'] == today:
+		if data['user'].upper() == follow_user and (data['date'] == today or data['date'] == yesterday):
 			if data['link'] not in json_dict:
 				json_dict[data['link']] = {'user' : data['user'], 'post_count' : data['post_count']}
 				posts_list.append(data)
