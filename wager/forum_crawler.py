@@ -118,8 +118,8 @@ def ProcessThread(url, follow_user):
 						post_number = post_content.div.div.strong.contents[0]
 						post_content.find_all('div', attrs={"class": "right"})[0].decompose()
 
-						post_time = post_content.find_all('div', attrs={"class": "posted"})[0].contents[0]
-						post_content.find_all('div', attrs={"class": "posted"})[0].decompose()
+						#post_time = post_content.find_all('div', attrs={"class": "posted"})[0].contents[0]
+						#post_content.find_all('div', attrs={"class": "posted"})[0].decompose()
 
 						post_text = ' '.join(post_content.findAll(text=True))
 
@@ -131,7 +131,7 @@ def ProcessThread(url, follow_user):
 							data  = follow_user + "\n"
 							data += "bit.ly/"+bitly_hash+"\n"
 							data += post_header + " | " + post_number + "\n"
-							data += post_time + "\n"
+							#data += post_time + "\n"
 							data += re.sub(r'[\xa0]'," ",post_text)
 							logging.info("Data matched and ready to send: {0}".format(data))
 							SendSMS(data)
