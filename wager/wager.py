@@ -15,12 +15,11 @@ from bs4 import BeautifulSoup
 path = os.path.dirname(os.path.realpath(__file__))
 
 def SendSMS(data):
-	recipients = config_dict['recipients']
+	recipients = config_dict['recipients'] # Should be a list or a string (if one email)
 	server = smtplib.SMTP( "smtp.gmail.com", 587 )
 	server.starttls()
 	server.login( config.gmail_user, config.gmail_pass )
-	for email_address in recipients:
-		server.sendmail( config.gmail_user, email_address, data )
+	server.sendmail( config.gmail_user, recipients, data )
 
 def CheckValue(wager, threshold=50):
 	regex = re.compile("[\d,]+")
@@ -58,6 +57,7 @@ if __name__ == "__main__":
 	for user in config_dict['users']:
 		customerID = user['customerID']
 		password = user['password']
+		friendly_name = user['friendly_name']
 		row_tracker = ''
 		row_counter = 0
 		bets_dict = {}
@@ -161,7 +161,7 @@ if __name__ == "__main__":
 				if bet['ticket_id'] not in id_list:
 					matches += 1 # Increment the match counter if one is found
 					logging.info("Ticket {0} is new".format(bet['ticket_id']))
-					data  = customerID + '\n'
+					data  = friendly_name + " (" + customerID + ")" + '\n'
 					data += "#" + bet['ticket_id']+'\n'
 					data += bet['wager_type']+'\n'
 					data += '\n'.join(bet['wager'])+'\n'

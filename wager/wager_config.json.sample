@@ -1,1 +1,18 @@
-{ "recipients": ["email1", "email2"], "users" : [{"customerID" : "username", "password" : "password"}], "urls" : {"login_url" : "url1", "validation_url" : "url2", "bets_url" : "url3"}}
+{
+    "recipients": [
+        "email1",
+        "email2"
+    ],
+    "users": [
+        {
+            "customerID": "username",
+            "password": "password",
+            "friendly_name" : "John Smith"
+        }
+    ],
+    "urls": {
+        "login_url": "url1",
+        "validation_url": "url2",
+        "bets_url": "url3"
+    }
+}
