@@ -43,9 +43,8 @@ def SendSMS(data):
 	server = smtplib.SMTP( "smtp.gmail.com", 587 )
 	server.starttls()
 	server.login( config.gmail_user, config.gmail_pass )
-	for email_address in recipients:
-		logging.debug("Sending: {0} to {1}".format(data, email_address))
-		server.sendmail( config.gmail_user, email_address, data.encode('utf-8') )
+	logging.debug("Sending: {0} to {1}".format(data, recipients))
+	server.sendmail( config.gmail_user, recipients, data.encode('utf-8') )
 
 def GetBitlyLink(url):
 	token = config_dict["bitly"]["token"]
@@ -118,8 +117,8 @@ def ProcessThread(url, follow_user):
 						post_number = post_content.div.div.strong.contents[0]
 						post_content.find_all('div', attrs={"class": "right"})[0].decompose()
 
-						#post_time = post_content.find_all('div', attrs={"class": "posted"})[0].contents[0]
-						#post_content.find_all('div', attrs={"class": "posted"})[0].decompose()
+						post_time = post_content.find_all('div', attrs={"class": "posted"})[0].contents[0]
+						post_content.find_all('div', attrs={"class": "posted"})[0].decompose()
 
 						post_text = ' '.join(post_content.findAll(text=True))
 
@@ -132,6 +131,7 @@ def ProcessThread(url, follow_user):
 							data += "bit.ly/"+bitly_hash+"\n"
 							data += post_header + " | " + post_number + "\n"
 							#data += post_time + "\n"
+							data += "\n"
 							data += re.sub(r'[\xa0]'," ",post_text)
 							logging.info("Data matched and ready to send: {0}".format(data))
 							SendSMS(data)
