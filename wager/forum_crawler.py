@@ -38,8 +38,7 @@ def LoadConfig():
 		sys.exit()
 
   
-def SendSMS(data):
-	recipients = config_dict['recipients']
+def SendSMS(data, recipients):
 	server = smtplib.SMTP( "smtp.gmail.com", 587 )
 	server.starttls()
 	server.login( config.gmail_user, config.gmail_pass )
@@ -61,7 +60,7 @@ def GetBitlyLink(url):
 		logging.error(r.content)
 		return ""
 
-def ProcessThread(url, follow_user):
+def ProcessThread(url, follow_user, recipients):
 	page = 1 # Assume every thread has 1 page
 	max_page = 0
 	runLoop = True
@@ -134,7 +133,7 @@ def ProcessThread(url, follow_user):
 							data += "\n"
 							data += re.sub(r'[\xa0]'," ",post_text)
 							logging.info("Data matched and ready to send: {0}".format(data))
-							SendSMS(data)
+							SendSMS(data, recipients)
 
 							# Notify and log
 							with open(path+'/forum.txt', 'a') as f:
@@ -220,15 +219,17 @@ if __name__ == "__main__":
 	base_url = config_dict['base_url']
 
 	for user in config_dict['users']:
-		logging.info("Checking user: %s" % user)
-		follow_user = user.upper()
+		logging.info("Checking user: %s" % user["username"])
+		follow_user = user["username"].upper()
 		url = base_url + follow_user
 		logging.info("User URL: %s" % url)
 		posts = []
 		posts = FindRecentPosts(follow_user, url)
 
+		recipients = user["recipients"]
+
 		for post in posts:
 			logging.info("Checking thread: %s" % post['link'])
-			ProcessThread(post['link'], follow_user)
+			ProcessThread(post['link'], follow_user, recipients)
 
 	

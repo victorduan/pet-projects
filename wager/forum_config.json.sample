@@ -1,11 +1,18 @@
 {
-    "recipients": [
-        "email@address"
-    ],
     "base_url": "http://some.url.com",
     "users": [
-        "url1",
-        "url2"
+        {
+            "user1" : "abc",
+            "recipients": [
+                "email@address"
+            ]
+        },
+        {
+            "user2" : "bcd",
+            "recipients": [
+                "email@address"
+            ]
+        }
     ],
     "bitly" : {
     	"token" : "token",
