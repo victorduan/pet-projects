@@ -1,13 +1,21 @@
 {
-    "recipients": [
-        "email1",
-        "email2"
-    ],
     "users": [
         {
             "customerID": "username",
             "password": "password",
-            "friendly_name" : "John Smith"
+            "friendly_name" : "John Smith",
+            "recipients": [
+                "email1",
+                "email2"
+            ]
+        },
+        {
+            "customerID": "username2",
+            "password": "password",
+            "friendly_name" : "Joe Smith",
+            "recipients": [
+                "email1"
+            ]
         }
     ],
     "urls": {

@@ -14,8 +14,7 @@ from bs4 import BeautifulSoup
 
 path = os.path.dirname(os.path.realpath(__file__))
 
-def SendSMS(data):
-	recipients = config_dict['recipients'] # Should be a list or a string (if one email)
+def SendSMS(data, recipients):
 	server = smtplib.SMTP( "smtp.gmail.com", 587 )
 	server.starttls()
 	server.login( config.gmail_user, config.gmail_pass )
@@ -171,7 +170,7 @@ if __name__ == "__main__":
 						if CheckValue(bet['bet_size']):
 							logging.info("Sending data: {0}".format(data))
 							# Send SMS
-							SendSMS(data)
+							SendSMS(data, user['recipients'])
 							logging.info("Updating list...")
 							with open(path+'/'+customerID+'-list.txt', 'a') as f:
 								f.write(bet['ticket_id']+'\n')
